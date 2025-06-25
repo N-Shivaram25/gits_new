@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 import '../App.css';
@@ -24,14 +23,14 @@ const VoiceToImage = () => {
   const [isEditingStory, setIsEditingStory] = useState(false);
   const [isPlayingStory, setIsPlayingStory] = useState(false);
   const [sagaProjects, setSagaProjects] = useState([]);
-  
+
   // Video mode specific states
   const [videoPrompts, setVideoPrompts] = useState([]);
   const [generatedVideos, setGeneratedVideos] = useState([]);
   const [videoProjects, setVideoProjects] = useState([]);
   const [isGeneratingVideos, setIsGeneratingVideos] = useState(false);
   const [videoGenerationProgress, setVideoGenerationProgress] = useState(0);
-  
+
   const [pauseDetectionTimeout, setPauseDetectionTimeout] = useState(null);
   const [stopRecordingTimeout, setStopRecordingTimeout] = useState(null);
   const [showAddSceneModal, setShowAddSceneModal] = useState(false);
@@ -170,7 +169,7 @@ const VoiceToImage = () => {
     // For saga mode, we handle transcripts through the pause detection logic only
   }, [speechFinalTranscript, currentMode]);
 
-  
+
 
   const addNewScene = (sceneText) => {
     if (sceneText.trim()) {
@@ -185,14 +184,14 @@ const VoiceToImage = () => {
     setIsAddingVoiceScene(true);
     setNewSceneText('');
     resetTranscript();
-    
+
     const speechConfig = {
       continuous: true,
       language: language,
       interimResults: true,
       maxAlternatives: 3
     };
-    
+
     console.log(`Starting voice scene recording with language: ${language}`);
     SpeechRecognition.startListening(speechConfig);
   };
@@ -216,7 +215,7 @@ const VoiceToImage = () => {
       .replace(/\s+/g, ' ')
       .replace(/[^\w\s\u0900-\u097F\u0C00-\u0C7F]/g, '') // Keep only alphanumeric, Telugu, Hindi chars
       .trim();
-    
+
     if (!cleanText || cleanText.length < 2) {
       return text;
     }
@@ -230,7 +229,7 @@ const VoiceToImage = () => {
           const result = await response.json();
           return result[0]?.[0]?.[0] || null;
         },
-        
+
         // MyMemory API with enhanced parameters
         async () => {
           const response = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(cleanText)}&langpair=${sourceLang.split('-')[0]}|en&de=your-email@example.com`);
@@ -240,7 +239,7 @@ const VoiceToImage = () => {
           }
           return null;
         },
-        
+
         // LibreTranslate with error handling
         async () => {
           const response = await fetch('https://libretranslate.de/translate', {
@@ -264,9 +263,9 @@ const VoiceToImage = () => {
           const timeoutPromise = new Promise((_, reject) => 
             setTimeout(() => reject(new Error('Translation timeout')), 5000)
           );
-          
+
           const result = await Promise.race([service(), timeoutPromise]);
-          
+
           if (result && result.trim() && result.trim() !== cleanText) {
             const translated = result.trim();
             console.log(`Translation successful - Original (${sourceLang}): "${cleanText}" → "${translated}"`);
@@ -376,7 +375,7 @@ const VoiceToImage = () => {
     try {
       const imagePromises = sagaStory.map(async (scene, index) => {
         const englishPrompt = await translateToEnglish(scene, language);
-        
+
         const form = new FormData();
         form.append('prompt', englishPrompt);
 
@@ -392,7 +391,7 @@ const VoiceToImage = () => {
 
         const buffer = await response.arrayBuffer();
         const imageUrl = URL.createObjectURL(new Blob([buffer], { type: 'image/png' }));
-        
+
         return {
           id: index,
           image: imageUrl,
@@ -437,14 +436,14 @@ const VoiceToImage = () => {
       for (let promptIndex = 0; promptIndex < videoPrompts.length; promptIndex++) {
         const prompt = videoPrompts[promptIndex];
         const englishPrompt = await translateToEnglish(prompt, language);
-        
+
         console.log(`Processing prompt ${promptIndex + 1}: "${englishPrompt}"`);
 
         // Generate 3 videos for each prompt
         for (let videoNumber = 1; videoNumber <= 3; videoNumber++) {
           try {
             console.log(`Generating video ${videoNumber} for prompt: ${englishPrompt}`);
-            
+
             // Runway ML Gen-3 API call - using correct endpoint
             const response = await fetch('https://api.runwayml.com/v1/image_to_video', {
               method: 'POST',
@@ -464,7 +463,7 @@ const VoiceToImage = () => {
 
             console.log(`API Response status: ${response.status}`);
             console.log(`API Response headers:`, Object.fromEntries(response.headers.entries()));
-            
+
             if (!response.ok) {
               let errorText;
               try {
@@ -473,7 +472,7 @@ const VoiceToImage = () => {
               } catch (e) {
                 errorText = 'Unable to read error response';
               }
-              
+
               // Handle specific error cases
               if (response.status === 401) {
                 throw new Error('Invalid API key. Please check your Runway ML API key.');
@@ -492,13 +491,13 @@ const VoiceToImage = () => {
 
             const data = await response.json();
             console.log('API Response data:', data);
-            
+
             // Check if the response contains a direct video URL or task ID
             if (data.url || data.video_url || data.output) {
               // Direct video URL response
               completedVideos++;
               setVideoGenerationProgress((completedVideos / totalVideos) * 100);
-              
+
               const newVideo = {
                 id: `${promptIndex}-${videoNumber}`,
                 promptIndex,
@@ -508,20 +507,20 @@ const VoiceToImage = () => {
                 translatedPrompt: englishPrompt,
                 status: 'completed'
               };
-              
+
               setGeneratedVideos(prev => [...prev, newVideo]);
               console.log('Video completed successfully:', newVideo);
-              
+
             } else if (data.id || data.task_id) {
               // Task-based response - need to poll for completion
               const taskId = data.id || data.task_id;
               let videoReady = false;
               let attempts = 0;
               const maxAttempts = 60; // 5 minutes maximum wait time
-              
+
               while (!videoReady && attempts < maxAttempts) {
                 await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
-                
+
                 try {
                   const statusResponse = await fetch(`https://api.runwayml.com/v1/tasks/${taskId}`, {
                     headers: {
@@ -539,12 +538,12 @@ const VoiceToImage = () => {
 
                   const statusData = await statusResponse.json();
                   console.log(`Video ${videoNumber} status:`, statusData.status || statusData.state);
-                  
+
                   if (statusData.status === 'SUCCEEDED' || statusData.state === 'completed' || statusData.url) {
                     videoReady = true;
                     completedVideos++;
                     setVideoGenerationProgress((completedVideos / totalVideos) * 100);
-                    
+
                     const newVideo = {
                       id: `${promptIndex}-${videoNumber}`,
                       promptIndex,
@@ -554,16 +553,16 @@ const VoiceToImage = () => {
                       translatedPrompt: englishPrompt,
                       status: 'completed'
                     };
-                    
+
                     setGeneratedVideos(prev => [...prev, newVideo]);
                     console.log('Video completed successfully:', newVideo);
-                    
+
                   } else if (statusData.status === 'FAILED' || statusData.state === 'failed') {
                     throw new Error(`Video generation failed: ${statusData.failure_reason || statusData.error || 'Unknown error'}`);
                   } else {
                     console.log(`Video ${videoNumber} still processing... (attempt ${attempts + 1})`);
                   }
-                  
+
                   attempts++;
                 } catch (pollError) {
                   console.error(`Error polling status for video ${videoNumber}:`, pollError);
@@ -586,7 +585,7 @@ const VoiceToImage = () => {
             console.error(`Error generating video ${videoNumber} for prompt ${promptIndex + 1}:`, error);
             completedVideos++;
             setVideoGenerationProgress((completedVideos / totalVideos) * 100);
-            
+
             const failedVideo = {
               id: `${promptIndex}-${videoNumber}`,
               promptIndex,
@@ -597,17 +596,17 @@ const VoiceToImage = () => {
               status: 'failed',
               error: error.message || 'Video generation failed'
             };
-            
+
             setGeneratedVideos(prev => [...prev, failedVideo]);
-            
+
             // Continue with next video instead of stopping everything
             continue;
           }
         }
       }
-      
+
       console.log('Video generation process completed');
-      
+
     } catch (err) {
       console.error('Video generation error:', err);
       setError(`Video generation failed: ${err.message || 'Unknown error occurred'}`);
@@ -632,7 +631,7 @@ const VoiceToImage = () => {
       generateVideosFromPrompts();
     } else {
       const textToUse = finalTranscript || transcript;
-      
+
       if (!textToUse || !textToUse.trim()) {
         alert('Please provide a prompt by speaking. Speak clearly and wait for the complete sentence to be captured.');
         return;
@@ -644,7 +643,7 @@ const VoiceToImage = () => {
         generateImages(textToUse.trim());
       }
     }
-    
+
     SpeechRecognition.stopListening();
     setIsListening(false);
     resetTranscript();
@@ -656,7 +655,7 @@ const VoiceToImage = () => {
 
   const startListening = () => {
     resetTranscript();
-    
+
     // Enhanced speech recognition configuration for better accuracy
     const speechConfig = {
       continuous: true,
@@ -665,12 +664,12 @@ const VoiceToImage = () => {
       maxAlternatives: 3, // Get multiple recognition alternatives
       grammars: undefined // Let browser use default grammar for better accuracy
     };
-    
+
     console.log(`Starting speech recognition with language: ${language}`);
     SpeechRecognition.startListening(speechConfig);
     setIsListening(true);
     setFinalTranscript('');
-    
+
     // Clear any existing timeouts
     if (pauseDetectionTimeout) clearTimeout(pauseDetectionTimeout);
     if (stopRecordingTimeout) clearTimeout(stopRecordingTimeout);
@@ -680,7 +679,7 @@ const VoiceToImage = () => {
   const stopListening = () => {
     SpeechRecognition.stopListening();
     setIsListening(false);
-    
+
     // Capture any remaining transcript as final for saga and video modes only if it's different
     if (transcript && transcript.trim() && currentMode === 'saga') {
       const currentScene = transcript.trim();
@@ -705,7 +704,7 @@ const VoiceToImage = () => {
     } else if (transcript && transcript.trim() && currentMode === 'single') {
       setFinalTranscript(transcript.trim());
     }
-    
+
     // Clear all timeouts
     if (speechTimeout) {
       clearTimeout(speechTimeout);
@@ -807,7 +806,7 @@ const VoiceToImage = () => {
     const dataStr = JSON.stringify(exportData, null, 2);
     const dataBlob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(dataBlob);
-    
+
     const link = document.createElement('a');
     link.href = url;
     link.download = `saga_export_${Date.now()}.json`;
@@ -942,7 +941,7 @@ const VoiceToImage = () => {
           <h1 className="welcome-title">Welcome to Sound Pix</h1>
           <p className="welcome-subtitle">✨ Just Say It... We'll Show It.</p>
           <p className="welcome-question">What do you want to see today?</p>
-          
+
           <div className="mode-selector">
             <label className="mode-option">
               <input 
@@ -967,7 +966,7 @@ const VoiceToImage = () => {
               Voice to Scene
             </label>
           </div>
-          
+
           <p className="export-text">*Export Visual Arts</p>
         </div>
 
@@ -1159,7 +1158,7 @@ const VoiceToImage = () => {
                         <i className="fas fa-plus"></i> Add Text Scene
                       </button>
                     </div>
-                    
+
                     <div className="voice-input-section">
                       <div className="voice-recording-status">
                         {isAddingVoiceScene ? (
@@ -1193,7 +1192,7 @@ const VoiceToImage = () => {
                       </button>
                     </div>
                   </div>
-                  
+
                   <div className="modal-actions">
                     <button onClick={() => setShowAddSceneModal(false)} className="cancel-btn">
                       Cancel
@@ -1241,6 +1240,14 @@ const VoiceToImage = () => {
                   </div>
                 ) : (
                   transcript || (isListening ? 'Describe your video scenes... Pause for 2 seconds between prompts, 5 seconds to stop recording.' : 'Your video prompts will appear here as you speak')
+                )}
+
+                {/* Loading indicator positioned directly below voice prompt */}
+                {isGeneratingVideos && (
+                  <div className="voice-loading-inline">
+                    <div className="loading-spinner-small"></div>
+                    <p>Generating your videos...</p>
+                  </div>
                 )}
               </div>
             </div>
@@ -1370,16 +1377,16 @@ const VoiceToImage = () => {
               <div className="transcript-box">
                 {finalTranscript || transcript || (isListening ? 'Listening... Speak clearly and pause briefly when done.' : 'Your description will appear here')}
                 {finalTranscript && <div style={{fontSize: '0.9em', color: '#28a745', marginTop: '0.5rem'}}>✓ Complete sentence captured</div>}
+
+                {/* Loading indicator positioned directly below voice prompt */}
+                {isLoading && currentMode === 'single' && (
+                  <div className="voice-loading-inline">
+                    <div className="loading-spinner-small"></div>
+                    <p>Creating your images...</p>
+                  </div>
+                )}
               </div>
             </div>
-
-            {/* Loading indicator for single image mode */}
-            {isLoading && currentMode === 'single' && (
-              <div className="voice-loading">
-                <div className="loading-spinner"></div>
-                <p>Creating your images...</p>
-              </div>
-            )}
 
             <div className="controls">
               <button 
@@ -1487,7 +1494,7 @@ const VoiceToImage = () => {
           </>
         )}
 
-        
+
 
         {error && <div className="error">{error}</div>}
       </div>

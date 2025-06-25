@@ -941,39 +941,42 @@
   justify-content: center;
 }
 
-/* HISTORY SIDEBAR - DARK THEME */
+/* HISTORY SIDEBAR - ENHANCED DARK THEME */
 .history-toggle {
   position: fixed;
   top: 20px;
   left: 20px;
   z-index: 100;
-  background: #2d3748;
+  background: linear-gradient(135deg, #1a202c, #2d3748);
   color: white;
   border: none;
-  padding: 0.7rem 1.5rem;
-  border-radius: 8px;
-  font-weight: 500;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  padding: 0.8rem 1.8rem;
+  border-radius: 12px;
+  font-weight: 600;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
   transition: var(--transition);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .history-toggle:hover {
-  background: #4a5568;
-  transform: translateY(-2px);
+  background: linear-gradient(135deg, #2d3748, #4a5568);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
 }
 
 .history-sidebar {
   position: fixed;
   top: 0;
-  left: -300px;
-  width: 280px;
+  left: -320px;
+  width: 300px;
   height: 100vh;
-  background: linear-gradient(180deg, #1a202c, #2d3748);
-  box-shadow: 5px 0 25px rgba(0, 0, 0, 0.3);
+  background: linear-gradient(180deg, #0f172a, #1a202c, #2d3748);
+  box-shadow: 8px 0 30px rgba(0, 0, 0, 0.4);
   z-index: 99;
-  padding: 1.5rem;
+  padding: 2rem 1.5rem;
   transition: var(--transition);
   overflow-y: auto;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .history-sidebar.open {
@@ -982,11 +985,14 @@
 
 .history-sidebar h3 {
   color: #ffffff;
-  margin-bottom: 1.5rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-  font-size: 1.2rem;
-  font-weight: 600;
+  margin-bottom: 2rem;
+  padding-bottom: 0.8rem;
+  border-bottom: 2px solid rgba(67, 97, 238, 0.3);
+  font-size: 1.3rem;
+  font-weight: 700;
+  text-align: center;
+  letter-spacing: 0.5px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .history-sidebar ul {
@@ -994,27 +1000,31 @@
 }
 
 .history-sidebar li {
-  margin-bottom: 0.8rem;
-  padding: 0.8rem;
-  border-radius: 8px;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  border-radius: 12px;
   cursor: pointer;
   transition: var(--transition);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
 }
 
 .history-sidebar li:hover {
-  background: rgba(255, 255, 255, 0.1);
-  transform: translateX(5px);
+  background: rgba(255, 255, 255, 0.12);
+  transform: translateX(8px);
+  box-shadow: 0 4px 15px rgba(67, 97, 238, 0.2);
+  border-color: rgba(67, 97, 238, 0.3);
 }
 
 .history-sidebar li.active {
-  background: rgba(67, 97, 238, 0.3);
+  background: linear-gradient(135deg, rgba(67, 97, 238, 0.3), rgba(67, 97, 238, 0.2));
   border-color: var(--primary-color);
   font-weight: 600;
+  box-shadow: 0 4px 20px rgba(67, 97, 238, 0.3);
 }
 
 .history-sidebar button {
@@ -1328,6 +1338,36 @@
   color: var(--primary-color);
   font-weight: 500;
   font-size: 1.1rem;
+}
+
+/* INLINE VOICE LOADING (positioned below voice prompt text) */
+.voice-loading-inline {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 1rem 0 0 0;
+  padding: 1rem;
+  background: rgba(67, 97, 238, 0.05);
+  border-radius: 10px;
+  border-top: 1px solid rgba(67, 97, 238, 0.1);
+}
+
+.loading-spinner-small {
+  width: 30px;
+  height: 30px;
+  border: 3px solid rgba(67, 97, 238, 0.2);
+  border-top: 3px solid var(--primary-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 0.5rem;
+}
+
+.voice-loading-inline p {
+  color: var(--primary-color);
+  font-weight: 500;
+  font-size: 0.95rem;
+  margin: 0;
+  text-align: center;
 }
 
 /* Updated App.css */

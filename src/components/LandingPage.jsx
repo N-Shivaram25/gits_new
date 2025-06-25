@@ -30,6 +30,7 @@ const LandingPage = ({ onGetStarted }) => {
               <div className="spark spark2"></div>
               <div className="spark spark3"></div>
               <div className="spark spark4"></div>
+              <div className="btn-ripple"></div>
             </div>
             <i className="fas fa-arrow-right btn-icon"></i>
           </button>

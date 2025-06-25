@@ -37,6 +37,14 @@ const VoiceToImage = () => {
   const [newSceneText, setNewSceneText] = useState('');
   const [isAddingVoiceScene, setIsAddingVoiceScene] = useState(false);
 
+  // Enhanced editing states
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editMode, setEditMode] = useState(null); // 'voice' or 'text'
+  const [voiceEditMode, setVoiceEditMode] = useState(null); // 'continue' or 'restart'
+  const [showProjectTitleModal, setShowProjectTitleModal] = useState(false);
+  const [projectTitle, setProjectTitle] = useState('');
+  const [showYourDesigns, setShowYourDesigns] = useState(false);
+
   const { transcript, finalTranscript: speechFinalTranscript, resetTranscript, browserSupportsSpeechRecognition } = useSpeechRecognition({
     transcribing: true,
     clearTranscriptOnListen: false,
@@ -57,6 +65,16 @@ const VoiceToImage = () => {
       setLanguage('hi-IN'); // Hindi
     } else {
       setLanguage('en-IN'); // Default to English
+    }
+
+    // Load saved projects from localStorage
+    const savedSagaProjects = localStorage.getItem('sagaProjects');
+    if (savedSagaProjects) {
+      try {
+        setSagaProjects(JSON.parse(savedSagaProjects));
+      } catch (error) {
+        console.error('Error loading saga projects:', error);
+      }
     }
   }, []);
 
@@ -722,17 +740,166 @@ const VoiceToImage = () => {
       alert('Please generate a complete saga first.');
       return;
     }
+    setShowProjectTitleModal(true);
+  };
+
+  const confirmSaveProject = async () => {
+    if (!projectTitle.trim()) {
+      alert('Please enter a project title.');
+      return;
+    }
 
     const project = {
       id: Date.now(),
-      name: `Story Project ${sagaProjects.length + 1}`,
+      name: projectTitle.trim(),
       story: sagaStory,
       images: sagaImages,
-      createdAt: new Date().toLocaleDateString()
+      createdAt: new Date().toLocaleDateString(),
+      createdTime: new Date().toLocaleTimeString()
     };
 
-    setSagaProjects([...sagaProjects, project]);
+    const updatedProjects = [...sagaProjects, project];
+    setSagaProjects(updatedProjects);
+    
+    // Save to localStorage
+    localStorage.setItem('sagaProjects', JSON.stringify(updatedProjects));
+
+    // Generate PDF
+    await generateProjectPDF(project);
+
+    setShowProjectTitleModal(false);
+    setProjectTitle('');
     alert('Saga project saved successfully!');
+  };
+
+  const generateProjectPDF = async (project) => {
+    try {
+      // Create a new window for PDF generation
+      const printWindow = window.open('', '_blank');
+      
+      let htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>${project.name}</title>
+          <style>
+            body { 
+              font-family: Arial, sans-serif; 
+              margin: 20px; 
+              background: #f8f9fa;
+            }
+            .pdf-container {
+              max-width: 800px;
+              margin: 0 auto;
+              background: white;
+              padding: 30px;
+              border-radius: 15px;
+              box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+              border: 2px solid #4361ee;
+            }
+            .pdf-header {
+              text-align: center;
+              margin-bottom: 30px;
+              padding-bottom: 20px;
+              border-bottom: 3px solid #4361ee;
+            }
+            .pdf-title {
+              font-size: 2.5rem;
+              color: #4361ee;
+              margin-bottom: 10px;
+              font-weight: bold;
+            }
+            .pdf-subtitle {
+              color: #666;
+              font-size: 1.2rem;
+            }
+            .scene-container {
+              margin: 30px 0;
+              padding: 20px;
+              border: 2px solid #e9ecef;
+              border-radius: 12px;
+              background: #f8f9fa;
+            }
+            .scene-number {
+              font-size: 1.5rem;
+              color: #4361ee;
+              font-weight: bold;
+              margin-bottom: 15px;
+            }
+            .scene-image {
+              width: 100%;
+              max-width: 400px;
+              height: 300px;
+              object-fit: cover;
+              border-radius: 10px;
+              margin: 15px auto;
+              display: block;
+              border: 3px solid #4361ee;
+            }
+            .scene-text {
+              font-size: 1.1rem;
+              line-height: 1.6;
+              color: #333;
+              margin-top: 15px;
+              padding: 15px;
+              background: white;
+              border-radius: 8px;
+              border-left: 4px solid #4cc9f0;
+            }
+            .pdf-footer {
+              text-align: center;
+              margin-top: 40px;
+              padding-top: 20px;
+              border-top: 2px solid #4361ee;
+              color: #666;
+            }
+            @media print {
+              body { margin: 0; background: white; }
+              .pdf-container { box-shadow: none; border: none; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="pdf-container">
+            <div class="pdf-header">
+              <div class="pdf-title">${project.name}</div>
+              <div class="pdf-subtitle">SoundPix Story Project</div>
+              <div class="pdf-subtitle">Created: ${project.createdAt} at ${project.createdTime}</div>
+            </div>
+      `;
+
+      project.images.forEach((sceneData, index) => {
+        htmlContent += `
+          <div class="scene-container">
+            <div class="scene-number">Scene ${index + 1}</div>
+            <img src="${sceneData.image}" alt="Scene ${index + 1}" class="scene-image" />
+            <div class="scene-text">${sceneData.prompt}</div>
+          </div>
+        `;
+      });
+
+      htmlContent += `
+            <div class="pdf-footer">
+              <p>Generated by SoundPix - Voice to Story Platform</p>
+              <p>Total Scenes: ${project.images.length}</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `;
+
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
+      
+      // Auto-trigger print dialog
+      setTimeout(() => {
+        printWindow.print();
+      }, 1000);
+
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Error generating PDF. Please try again.');
+    }
   };
 
   const saveVideoProject = () => {
@@ -904,6 +1071,53 @@ const VoiceToImage = () => {
     setSagaStory(updatedStory);
   };
 
+  const handleEditStory = () => {
+    setShowEditModal(true);
+  };
+
+  const startVoiceEdit = (mode) => {
+    setVoiceEditMode(mode);
+    setEditMode('voice');
+    setShowEditModal(false);
+    
+    if (mode === 'restart') {
+      setSagaStory([]);
+      setSagaImages([]);
+    }
+    
+    resetTranscript();
+    startListening();
+  };
+
+  const startTextEdit = () => {
+    setEditMode('text');
+    setShowEditModal(false);
+    setIsEditingStory(true);
+  };
+
+  const handleYourDesigns = () => {
+    setShowYourDesigns(true);
+  };
+
+  const closeYourDesigns = () => {
+    setShowYourDesigns(false);
+  };
+
+  const deleteProject = (projectId) => {
+    if (window.confirm('Are you sure you want to delete this project?')) {
+      const updatedProjects = sagaProjects.filter(project => project.id !== projectId);
+      setSagaProjects(updatedProjects);
+      localStorage.setItem('sagaProjects', JSON.stringify(updatedProjects));
+    }
+  };
+
+  const loadProject = (project) => {
+    setSagaStory(project.story);
+    setSagaImages(project.images);
+    setShowYourDesigns(false);
+    alert(`Project "${project.name}" loaded successfully!`);
+  };
+
   if (!browserSupportsSpeechRecognition) {
     return <div className="error">Your browser does not support speech recognition.</div>;
   }
@@ -929,7 +1143,7 @@ const VoiceToImage = () => {
           >
             <i className="fas fa-image"></i> Voice to Image Mode
           </button>
-          <button className="nav-button" onClick={() => alert('Custom design feature coming soon!')}>
+          <button className="nav-button" onClick={handleYourDesigns}>
             <i className="fas fa-palette"></i> Your Designs
           </button>
         </div>
@@ -1103,10 +1317,10 @@ const VoiceToImage = () => {
               {sagaStory.length > 0 && (
                 <>
                   <button 
-                    onClick={() => setIsEditingStory(!isEditingStory)}
+                    onClick={handleEditStory}
                     className="edit-button"
                   >
-                    <i className="fas fa-edit"></i> {isEditingStory ? 'Done Editing' : 'Edit Story'}
+                    <i className="fas fa-edit"></i> Edit Story
                   </button>
 
                   <button 
@@ -1259,6 +1473,160 @@ const VoiceToImage = () => {
                     <button onClick={() => setShowAddSceneModal(false)} className="cancel-btn">
                       Cancel
                     </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Edit Story Modal */}
+            {showEditModal && (
+              <div className="modal-overlay" onClick={() => setShowEditModal(false)}>
+                <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                  <h3>Edit Story Options</h3>
+                  <div className="edit-options">
+                    <div className="edit-option-section">
+                      <h4>Edit with Voice</h4>
+                      <div className="voice-edit-buttons">
+                        <button 
+                          onClick={() => startVoiceEdit('continue')}
+                          className="voice-edit-btn continue-btn"
+                        >
+                          <i className="fas fa-play"></i> Continue Prompt
+                        </button>
+                        <button 
+                          onClick={() => startVoiceEdit('restart')}
+                          className="voice-edit-btn restart-btn"
+                        >
+                          <i className="fas fa-redo"></i> Restart Prompt
+                        </button>
+                      </div>
+                    </div>
+                    <div className="edit-option-section">
+                      <h4>Edit with Text</h4>
+                      <button 
+                        onClick={startTextEdit}
+                        className="text-edit-btn"
+                      >
+                        <i className="fas fa-keyboard"></i> Edit Text Manually
+                      </button>
+                    </div>
+                  </div>
+                  <div className="modal-actions">
+                    <button onClick={() => setShowEditModal(false)} className="cancel-btn">
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Project Title Modal */}
+            {showProjectTitleModal && (
+              <div className="modal-overlay" onClick={() => setShowProjectTitleModal(false)}>
+                <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                  <h3>Give Title for Project</h3>
+                  <div className="project-title-section">
+                    <input
+                      type="text"
+                      value={projectTitle}
+                      onChange={(e) => setProjectTitle(e.target.value)}
+                      placeholder="Enter your project title..."
+                      className="project-title-input"
+                      maxLength={50}
+                    />
+                    <p className="title-hint">This will be the name of your saved saga project</p>
+                  </div>
+                  <div className="modal-actions">
+                    <button onClick={() => setShowProjectTitleModal(false)} className="cancel-btn">
+                      Cancel
+                    </button>
+                    <button 
+                      onClick={confirmSaveProject}
+                      disabled={!projectTitle.trim()}
+                      className="confirm-save-btn"
+                    >
+                      <i className="fas fa-save"></i> Save Project
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Your Designs Modal */}
+            {showYourDesigns && (
+              <div className="modal-overlay full-screen" onClick={closeYourDesigns}>
+                <div className="designs-modal-content" onClick={(e) => e.stopPropagation()}>
+                  <div className="designs-header">
+                    <h2><i className="fas fa-palette"></i> Your Designs</h2>
+                    <button onClick={closeYourDesigns} className="close-designs-btn">
+                      <i className="fas fa-times"></i>
+                    </button>
+                  </div>
+                  
+                  <div className="designs-content">
+                    <div className="saga-projects-section">
+                      <h3><i className="fas fa-book"></i> Saga Projects ({sagaProjects.length})</h3>
+                      {sagaProjects.length === 0 ? (
+                        <div className="no-projects">
+                          <i className="fas fa-folder-open"></i>
+                          <p>No saga projects saved yet.</p>
+                          <p>Create and save your first story!</p>
+                        </div>
+                      ) : (
+                        <div className="projects-grid">
+                          {sagaProjects.map((project) => (
+                            <div key={project.id} className="project-card">
+                              <div className="project-header">
+                                <h4>{project.name}</h4>
+                                <div className="project-actions">
+                                  <button 
+                                    onClick={() => loadProject(project)}
+                                    className="load-btn"
+                                    title="Load Project"
+                                  >
+                                    <i className="fas fa-folder-open"></i>
+                                  </button>
+                                  <button 
+                                    onClick={() => generateProjectPDF(project)}
+                                    className="pdf-btn"
+                                    title="Generate PDF"
+                                  >
+                                    <i className="fas fa-file-pdf"></i>
+                                  </button>
+                                  <button 
+                                    onClick={() => deleteProject(project.id)}
+                                    className="delete-btn"
+                                    title="Delete Project"
+                                  >
+                                    <i className="fas fa-trash"></i>
+                                  </button>
+                                </div>
+                              </div>
+                              <div className="project-info">
+                                <p><strong>Scenes:</strong> {project.story.length}</p>
+                                <p><strong>Created:</strong> {project.createdAt}</p>
+                                {project.createdTime && (
+                                  <p><strong>Time:</strong> {project.createdTime}</p>
+                                )}
+                              </div>
+                              <div className="project-preview">
+                                {project.images.slice(0, 3).map((img, idx) => (
+                                  <img 
+                                    key={idx} 
+                                    src={img.image} 
+                                    alt={`Scene ${idx + 1}`}
+                                    className="preview-image"
+                                  />
+                                ))}
+                                {project.images.length > 3 && (
+                                  <div className="more-images">+{project.images.length - 3}</div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>

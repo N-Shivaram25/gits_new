@@ -762,18 +762,70 @@ const VoiceToImage = () => {
     setIsPlayingStory(true);
     setCurrentSagaScene(0);
 
-    // Simple slideshow implementation
+    // Enhanced story play with voice synthesis and scrolling
     let sceneIndex = 0;
-    const interval = setInterval(() => {
-      if (sceneIndex < sagaStory.length - 1) {
-        sceneIndex++;
-        setCurrentSagaScene(sceneIndex);
-      } else {
-        clearInterval(interval);
+    
+    const playScene = (index) => {
+      if (index >= sagaStory.length) {
         setIsPlayingStory(false);
         setCurrentSagaScene(0);
+        return;
       }
-    }, 3000); // 3 seconds per scene
+
+      setCurrentSagaScene(index);
+      
+      // Scroll to the current scene
+      const sceneElement = document.getElementById(`scene-${index}`);
+      if (sceneElement) {
+        sceneElement.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'center',
+          inline: 'center'
+        });
+      }
+
+      // Use Web Speech API to read the scene text
+      if ('speechSynthesis' in window) {
+        const utterance = new SpeechSynthesisUtterance(sagaStory[index]);
+        
+        // Configure voice settings based on current language
+        if (language === 'hi-IN') {
+          utterance.lang = 'hi-IN';
+        } else if (language === 'te-IN') {
+          utterance.lang = 'te-IN';
+        } else {
+          utterance.lang = 'en-US';
+        }
+        
+        utterance.rate = 0.8;
+        utterance.pitch = 1;
+        utterance.volume = 1;
+
+        // When speech ends, move to next scene
+        utterance.onend = () => {
+          setTimeout(() => {
+            playScene(index + 1);
+          }, 1000); // 1 second pause between scenes
+        };
+
+        // Handle speech errors
+        utterance.onerror = () => {
+          console.warn('Speech synthesis error, continuing to next scene');
+          setTimeout(() => {
+            playScene(index + 1);
+          }, 3000); // Fallback to 3 second delay
+        };
+
+        window.speechSynthesis.speak(utterance);
+      } else {
+        // Fallback for browsers without speech synthesis
+        setTimeout(() => {
+          playScene(index + 1);
+        }, 3000);
+      }
+    };
+
+    playScene(0);
   };
 
   const downloadImage = (url) => {
@@ -1070,6 +1122,15 @@ const VoiceToImage = () => {
                       <button onClick={playStory} disabled={isPlayingStory} className="play-button">
                         <i className="fas fa-play"></i> Play Story
                       </button>
+                      {isPlayingStory && (
+                        <button onClick={() => {
+                          window.speechSynthesis.cancel();
+                          setIsPlayingStory(false);
+                          setCurrentSagaScene(0);
+                        }} className="stop-button">
+                          <i className="fas fa-stop"></i> Stop Story
+                        </button>
+                      )}
                       <button onClick={saveSagaProject} className="save-button">
                         <i className="fas fa-save"></i> Save Project
                       </button>
@@ -1103,11 +1164,12 @@ const VoiceToImage = () => {
                   <i className="fas fa-images"></i> Your Story Storyboard
                   {isPlayingStory && ` - Scene ${currentSagaScene + 1}`}
                 </h3>
-                <div className="storyboard-container">
+                <div className="storyboard-container-horizontal">
                   {sagaImages.map((sceneData, index) => (
                     <div 
                       key={index} 
-                      className={`storyboard-scene ${isPlayingStory && index === currentSagaScene ? 'active-scene' : ''}`}
+                      id={`scene-${index}`}
+                      className={`storyboard-scene-horizontal ${isPlayingStory && index === currentSagaScene ? 'active-scene-playing' : ''}`}
                     >
                       <div className="scene-number-badge">Scene {index + 1}</div>
                       <img src={sceneData.image} alt={`Scene ${index + 1}`} />

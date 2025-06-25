@@ -45,7 +45,7 @@ const VoiceToImage = () => {
   });
 
   const currentSet = imageSets[currentSetIndex];
-  const CLIPDROP_API_KEY = '365439e8863868b2d2d7cd6fa7ad12501cb00156468a57f65f489c60922e831a37575c0d9762a4519a5d306f657697e2';
+  const CLIPDROP_API_KEY = 'b3f450cf5acf07b6b43c7a76e06bca0353c42b78d1c7a20eef09d9c6ed4e4faa14e8903368f05846ba2e3eacc18533fa';
   const RUNWAY_ML_API_KEY = 'key_96be78cd056f7123b3c17dd041dc4059945de770582f895752db13da4d29f61d580c8f5137a666f6cb84e2b237a492b0a1eae4665bdf27c49be44737a954d801';
 
   useEffect(() => {

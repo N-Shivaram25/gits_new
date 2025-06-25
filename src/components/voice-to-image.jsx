@@ -862,6 +862,10 @@ const VoiceToImage = () => {
       {/* Header Navigation */}
       <header className="header-nav">
         <div className="nav-left">
+          <div className="brand-logo" onClick={() => window.location.reload()}>
+            <i className="fas fa-volume-up"></i>
+            <span>SoundPix</span>
+          </div>
           <button 
             className={`nav-button ${currentMode === 'saga' ? 'active' : ''}`}
             onClick={() => setCurrentMode('saga')}
@@ -869,21 +873,18 @@ const VoiceToImage = () => {
             <i className="fas fa-book"></i> Voice to Saga Mode
           </button>
           <button 
-            className={`nav-button ${currentMode === 'video' ? 'active' : ''}`}
-            onClick={() => setCurrentMode('video')}
+            className={`nav-button ${currentMode === 'single' ? 'active' : ''}`}
+            onClick={() => setCurrentMode('single')}
           >
-            <i className="fas fa-video"></i> Voice to Video Mode
+            <i className="fas fa-image"></i> Voice to Image Mode
           </button>
           <button className="nav-button" onClick={() => alert('Custom design feature coming soon!')}>
-            <i className="fas fa-palette"></i> Your Design
-          </button>
-          <button className="nav-button" onClick={exportSagaData}>
-            <i className="fas fa-download"></i> Export
+            <i className="fas fa-palette"></i> Your Designs
           </button>
         </div>
         <div className="nav-right">
-          <button className="nav-button profile-icon">
-            <i className="fas fa-user-circle"></i>
+          <button className="nav-button export-btn" onClick={exportSagaData}>
+            <i className="fas fa-download"></i> Export
           </button>
         </div>
       </header>
@@ -937,20 +938,38 @@ const VoiceToImage = () => {
       </div>
 
       <div className="main-content">
-        <h1 className="main-title">
-          Sound Pix <span className="gradient-text">
-            {currentMode === 'saga' ? 'Voice to Saga' : 
-             currentMode === 'video' ? 'Voice to Video' : 'Voice to Image'}
-          </span>
-        </h1>
-        <p>
-          {currentMode === 'saga' 
-            ? 'Tell a story and watch it come to life through AI-generated images'
-            : currentMode === 'video'
-            ? 'Describe your video scenes verbally and generate AI videos with Runway ML'
-            : 'Describe your image verbally, then generate visual magic'
-          }
-        </p>
+        <div className="welcome-section">
+          <h1 className="welcome-title">Welcome to Sound Pix</h1>
+          <p className="welcome-subtitle">✨ Just Say It... We'll Show It.</p>
+          <p className="welcome-question">What do you want to see today?</p>
+          
+          <div className="mode-selector">
+            <label className="mode-option">
+              <input 
+                type="radio" 
+                name="mode" 
+                value="single" 
+                checked={currentMode === 'single'}
+                onChange={() => setCurrentMode('single')}
+              />
+              <span className="radio-custom"></span>
+              Voice to Image
+            </label>
+            <label className="mode-option">
+              <input 
+                type="radio" 
+                name="mode" 
+                value="saga" 
+                checked={currentMode === 'saga'}
+                onChange={() => setCurrentMode('saga')}
+              />
+              <span className="radio-custom"></span>
+              Voice to Scene
+            </label>
+          </div>
+          
+          <p className="export-text">*Export Visual Arts</p>
+        </div>
 
         <div className="language-toggle">
           <button onClick={toggleLanguage}>
@@ -1069,6 +1088,14 @@ const VoiceToImage = () => {
                 <i className="fas fa-eraser"></i> Clear All
               </button>
             </div>
+
+            {/* Loading indicator for saga mode */}
+            {isLoading && currentMode === 'saga' && (
+              <div className="voice-loading">
+                <div className="loading-spinner"></div>
+                <p>Creating your story images...</p>
+              </div>
+            )}
 
             {/* Saga Images Display */}
             {sagaImages.length > 0 && (
@@ -1346,6 +1373,14 @@ const VoiceToImage = () => {
               </div>
             </div>
 
+            {/* Loading indicator for single image mode */}
+            {isLoading && currentMode === 'single' && (
+              <div className="voice-loading">
+                <div className="loading-spinner"></div>
+                <p>Creating your images...</p>
+              </div>
+            )}
+
             <div className="controls">
               <button 
                 onClick={isListening ? stopListening : startListening} 
@@ -1452,16 +1487,7 @@ const VoiceToImage = () => {
           </>
         )}
 
-        {(isLoading || isGeneratingVideos) && (
-          <div className="loading">
-            <div className="spinner"></div>
-            <p>
-              {currentMode === 'saga' ? 'Creating your story images...' : 
-               currentMode === 'video' ? 'Creating your videos with Runway ML...' :
-               'Creating your images...'}
-            </p>
-          </div>
-        )}
+        
 
         {error && <div className="error">{error}</div>}
       </div>
